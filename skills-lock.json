@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "elysia/SKILL.md",
       "computedHash": "55268e69a2c766ed67e56a0db57544f60cc52dba0c7f024a974baf965e525e1b"
+    },
+    "wxt-browser-extensions": {
+      "source": "pproenca/dot-skills",
+      "sourceType": "github",
+      "skillPath": "skills/.experimental/wxt-browser-extensions/SKILL.md",
+      "computedHash": "b0ca41608b74d1892af14be425fdfacaec777ea8b7090b7ebd615b80d6816a28"
     }
   }
 }
