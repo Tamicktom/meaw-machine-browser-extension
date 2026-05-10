@@ -27,6 +27,31 @@ bun run build
 
 Output: `.output/chrome-mv3`
 
+## Mock control server (local testing)
+
+A small [Elysia](https://elysiajs.com/) server in `mock-server/` opens the same WebSocket protocol the real control server would use, so you can connect the extension without an LLM backend.
+
+```bash
+bun run mock-server
+```
+
+Default listen address: `127.0.0.1:8787`. Override with `HOST` and `PORT` if needed.
+
+- Interactive API docs (Scalar): [`http://127.0.0.1:8787/openapi`](http://127.0.0.1:8787/openapi) — powered by [`@elysia/openapi`](https://elysiajs.com/plugins/openapi.md).
+- Raw OpenAPI JSON: `http://127.0.0.1:8787/openapi/json`.
+
+1. Start the mock, then open `http://127.0.0.1:8787/health` (or `/`) and copy **`wsUrl`** — for example `ws://127.0.0.1:8787/ws`.
+2. In the extension popup, paste that URL and click **Connect**.
+3. Send a command to every connected client via HTTP:
+
+```bash
+curl -s -X POST http://127.0.0.1:8787/command \
+  -H 'Content-Type: application/json' \
+  -d '{"command":{"id":"demo-1","action":"tab.navigate","params":{"url":"https://example.com"}}}'
+```
+
+If no extension is connected, `POST /command` returns **503** with `{ "ok": false, "sent": 0 }`.
+
 ## Configuration
 
 - Open the extension **popup** (toolbar icon).
@@ -90,3 +115,4 @@ Events (examples):
 | `bun run build` | Production bundle |
 | `bun run zip` | Zip for store upload (WXT) |
 | `bun run check` | TypeScript `tsc --noEmit` |
+| `bun run mock-server` | Local Elysia WebSocket mock + `POST /command` |
