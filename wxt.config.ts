@@ -7,6 +7,7 @@ export default defineConfig({
     permissions: [
       "alarms",
       "activeTab",
+      "tabGroups",
       "tabs",
       "scripting",
       "storage",

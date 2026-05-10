@@ -26,6 +26,8 @@ import { STORAGE_WS_URL } from "~/utils/storage-keys";
 
 const CONTROLLED_SCRIPT = "meaw-controlled.js";
 
+const MEAW_TAB_GROUP_TITLE = "meaw-machine";
+
 const controlledTabIds = new Set<number>();
 
 let socketUiState: SwToPopupMessage["socketState"] = "idle";
@@ -94,24 +96,45 @@ async function ensureOffscreenDocument() {
   }
 }
 
+async function placeTabInMeawMachineGroup(tabId: number, windowId: number): Promise<void> {
+  const existing = await chrome.tabGroups.query({ title: MEAW_TAB_GROUP_TITLE, windowId });
+  let groupId: number;
+  if (existing.length > 0) {
+    groupId = await chrome.tabs.group({ groupId: existing[0].id, tabIds: [tabId] });
+  } else {
+    groupId = await chrome.tabs.group({ tabIds: [tabId], createProperties: { windowId } });
+    await chrome.tabGroups.update(groupId, { title: MEAW_TAB_GROUP_TITLE });
+  }
+  await chrome.tabGroups.move(groupId, { index: 0, windowId });
+}
+
 async function handleTabNavigate(command: ServerCommand, params: TabNavigateParams): Promise<number> {
   const parsed = validateTabNavigateUrl(params.url);
 
   let tabId: number;
+  let windowId: number;
+
   if (params.tabId != null) {
     try {
-      await chrome.tabs.update(params.tabId, { url: parsed.href, active: true });
+      await chrome.tabs.update(params.tabId, { url: parsed.href, active: false });
       tabId = params.tabId;
+      const tab = await chrome.tabs.get(tabId);
+      if (tab.windowId == null) throw new Error("Tab has no window");
+      windowId = tab.windowId;
     } catch {
-      const created = await chrome.tabs.create({ url: parsed.href, active: true });
-      if (created.id == null) throw new Error("Could not create tab");
+      const created = await chrome.tabs.create({ url: parsed.href, active: false });
+      if (created.id == null || created.windowId == null) throw new Error("Could not create tab");
       tabId = created.id;
+      windowId = created.windowId;
     }
   } else {
-    const created = await chrome.tabs.create({ url: parsed.href, active: true });
-    if (created.id == null) throw new Error("Could not create tab");
+    const created = await chrome.tabs.create({ url: parsed.href, active: false });
+    if (created.id == null || created.windowId == null) throw new Error("Could not create tab");
     tabId = created.id;
+    windowId = created.windowId;
   }
+
+  await placeTabInMeawMachineGroup(tabId, windowId);
 
   controlledTabIds.add(tabId);
   await emitToServer({ tabId, controlled: true }, "tab.state");

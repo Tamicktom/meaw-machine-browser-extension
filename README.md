@@ -60,7 +60,7 @@ If no extension is connected, `POST /command` returns **503** with `{ "ok": fals
 
 ## Permissions
 
-The manifest requests `tabs`, `scripting`, `storage`, `offscreen`, `windows`, `activeTab`, `alarms`, and host permission `<all_urls>` so automation and screenshots work on normal browsing pages.
+The manifest requests `tabs`, `tabGroups`, `scripting`, `storage`, `offscreen`, `windows`, `activeTab`, `alarms`, and host permission `<all_urls>` so automation, tab grouping, and screenshots work on normal browsing pages.
 
 ## WebSocket protocol (v1)
 
@@ -85,7 +85,7 @@ Supported `action` values:
 
 | Action | Params | Notes |
 |--------|--------|--------|
-| `tab.navigate` | `{ "url": string, "tabId"?: number }` | Updates `tabId` if valid; otherwise creates a tab. Tab is marked controlled and the UI strip is injected. |
+| `tab.navigate` | `{ "url": string, "tabId"?: number }` | Updates `tabId` if valid; otherwise creates a tab. Opens in the **background** (no focus steal), places the tab in a group titled `meaw-machine` (reuses an existing group in the same window when present), moves that group to the **first** slot in the tab strip, then marks the tab controlled and injects the UI strip. |
 | `tab.close` | `{ "tabId": number }` | Closes the tab. |
 | `page.captureScreenshot` | `{ "tabId"?: number, "format"?: "png" \| "jpeg", "quality"?: number }` | Activates the tab, captures **visible viewport** only. Result includes `mimeType` and base64 (no `data:` prefix). |
 | `page.getContent` | `{ "tabId"?: number, "mode"?: "text" \| "html" }` | Returns trimmed text or HTML (size-capped). |
