@@ -1,0 +1,9 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["chrome"]
+  },
+  "include": ["./**/*.ts", "./**/*.tsx", "./**/*.d.ts", "./.wxt/**/*.ts"]
+}
