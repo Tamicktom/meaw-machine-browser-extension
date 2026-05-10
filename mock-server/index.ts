@@ -73,7 +73,7 @@ const commandUnavailableResponse = t.Object({
   error: t.String(),
 });
 
-new Elysia()
+const app = new Elysia()
   .use(
     openapi({
       documentation: {
@@ -180,8 +180,25 @@ new Elysia()
     message(_ws, message) {
       logIncomingMessage(message);
     },
-  })
-  .listen({ port: SERVER_PORT, hostname: SERVER_HOST });
+  });
+
+// Elysia's Bun adapter defaults `reusePort: true`, which silently allows
+// multiple mock-server processes to bind to the same port. In a development
+// setting that's a footgun: the extension stays "Connected" even after the
+// user stops what they think is the only server, because another stale
+// instance is still answering. Force `reusePort: false` so a duplicate launch
+// fails loudly with a clear hint.
+try {
+  app.listen({ port: SERVER_PORT, hostname: SERVER_HOST, reusePort: false });
+} catch (err) {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`[meaw-mock] Failed to bind ${SERVER_HOST}:${SERVER_PORT}: ${message}`);
+  console.error(
+    `[meaw-mock] Another process is already listening on port ${SERVER_PORT}. ` +
+      `Stop it first, e.g.: lsof -ti:${SERVER_PORT} | xargs -r kill`,
+  );
+  process.exit(1);
+}
 
 console.log(
   `[meaw-mock]

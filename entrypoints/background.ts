@@ -21,6 +21,7 @@ import type {
   SwToPopupMessage,
 } from "~/utils/bridge-messages";
 import { BRIDGE_SOURCE_OFFSCREEN } from "~/utils/bridge-messages";
+import { validateTabNavigateUrl } from "~/utils/commands/validate-tab-navigate-url";
 import { STORAGE_WS_URL } from "~/utils/storage-keys";
 
 const CONTROLLED_SCRIPT = "meaw-controlled.js";
@@ -94,19 +95,7 @@ async function ensureOffscreenDocument() {
 }
 
 async function handleTabNavigate(command: ServerCommand, params: TabNavigateParams): Promise<number> {
-  const url = params.url?.trim();
-  if (!url) {
-    throw new Error("Missing url");
-  }
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    throw new Error("Invalid URL");
-  }
-  if (!/^https?:$/i.test(parsed.protocol)) {
-    throw new Error("Only http(s) URLs are allowed");
-  }
+  const parsed = validateTabNavigateUrl(params.url);
 
   let tabId: number;
   if (params.tabId != null) {

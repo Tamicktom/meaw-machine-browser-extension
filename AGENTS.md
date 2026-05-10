@@ -27,6 +27,7 @@ Common commands:
 - `bun run dev` — WXT watch
 - `bun run build` — production bundle
 - `bun run check` — `tsc --noEmit` (run before finishing substantive changes)
+- `bun run test` — `bun test` (protocol and command helpers)
 - `bun run mock-server` — local Elysia server with WebSocket + `POST /command` ([mock-server/index.ts](mock-server/index.ts))
 
 ## Architecture
@@ -88,7 +89,7 @@ Follow **Mock control server** in [README.md](README.md): start `bun run mock-se
 
 ## Quality gate
 
-Run `bun run check` after edits. There is **no** automated test suite in this repository yet (no `*.test.*` / `*.spec.*` files); rely on typecheck and manual extension loading from `.output/chrome-mv3`.
+Run `bun run check` and `bun run test` after substantive edits. For end-to-end behavior, load the unpacked extension from `.output/chrome-mv3`.
 
 ## Out of scope
 

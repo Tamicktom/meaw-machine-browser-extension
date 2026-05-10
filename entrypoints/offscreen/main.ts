@@ -45,15 +45,52 @@ function sendEnvelope(envelope: ExtensionEventEnvelope) {
   socket.send(JSON.stringify(envelope));
 }
 
+// Detaches all event handlers from a WebSocket so its async close/error events
+// cannot interfere with a newer socket that has replaced it in `socket`.
+function detachSocketHandlers(ws: WebSocket): void {
+  ws.onopen = null;
+  ws.onmessage = null;
+  ws.onerror = null;
+  ws.onclose = null;
+}
+
 function openSocket(url: string): void {
+  // Idempotency: if we already have a live socket to the same URL, do nothing.
+  // Without this, repeated `socket-connect` messages (e.g. from the service
+  // worker waking up via the keepalive alarm) would tear down and recreate the
+  // socket every time, which can leave duplicate connections alive and cause
+  // the mock server to broadcast each command to multiple clients.
+  if (connectUrl === url && socket) {
+    if (socket.readyState === WebSocket.OPEN) {
+      manualDisconnect = false;
+      forwardState("open");
+      return;
+    }
+    if (socket.readyState === WebSocket.CONNECTING) {
+      manualDisconnect = false;
+      forwardState("connecting");
+      return;
+    }
+  }
+
   manualDisconnect = false;
   connectUrl = url;
   forwardState("connecting");
-  try {
-    socket?.close();
-  } catch {
-    // ignore
+
+  // Cleanly retire the previous socket: drop its handlers first so its
+  // pending close/error events cannot null out the new `socket` reference
+  // or schedule a stale reconnect that would duplicate the connection.
+  const previousSocket = socket;
+  socket = null;
+  if (previousSocket) {
+    detachSocketHandlers(previousSocket);
+    try {
+      previousSocket.close();
+    } catch {
+      // ignore
+    }
   }
+
   let ws: WebSocket;
   try {
     ws = new WebSocket(url);
@@ -65,6 +102,7 @@ function openSocket(url: string): void {
   socket = ws;
 
   ws.onopen = () => {
+    if (socket !== ws) return;
     reconnectAttempt = 0;
     forwardState("open");
     sendEnvelope({
@@ -75,16 +113,20 @@ function openSocket(url: string): void {
   };
 
   ws.onmessage = (ev) => {
+    if (socket !== ws) return;
     if (typeof ev.data === "string") {
       forwardLine(ev.data);
     }
   };
 
   ws.onerror = () => {
+    if (socket !== ws) return;
     forwardState("error", "WebSocket error");
   };
 
   ws.onclose = (ev) => {
+    // Ignore close events from sockets that have already been replaced.
+    if (socket !== ws) return;
     socket = null;
     sendEnvelope({
       type: "extension.disconnected",

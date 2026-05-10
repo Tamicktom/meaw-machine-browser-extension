@@ -119,7 +119,7 @@ export function parseJsonEnvelope(raw: string): ServerCommandEnvelope | null {
     const cmd = command as Record<string, unknown>;
     if (typeof cmd.id !== "string") return null;
     if (typeof cmd.action !== "string") return null;
-    if (!cmd.params || typeof cmd.params !== "object") return null;
+    if (!cmd.params || typeof cmd.params !== "object" || Array.isArray(cmd.params)) return null;
     return {
       type: "command",
       command: {
