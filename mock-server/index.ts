@@ -1,4 +1,6 @@
 //* Libraries imports
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { openapi } from "@elysia/openapi";
 import { Elysia, status, t } from "elysia";
 
@@ -26,17 +28,87 @@ type WsClient = { send(data: string): void };
 
 const clients = new Set<WsClient>();
 
+const SCREENSHOT_OUTPUT_DIR =
+  process.env.MEAW_MOCK_SCREENSHOT_DIR != null && process.env.MEAW_MOCK_SCREENSHOT_DIR !== ""
+    ? path.resolve(process.env.MEAW_MOCK_SCREENSHOT_DIR)
+    : path.join(import.meta.dir, "screenshots");
+
+/**
+ * Elysia pre-parses JSON text WebSocket frames into objects (see createWSMessageParser).
+ * Accept string, Uint8Array/Buffer, or already-parsed object.
+ */
+function parseIncomingWsJsonObject(message: unknown): Record<string, unknown> | null {
+  let data: unknown;
+  if (typeof message === "string") {
+    try {
+      data = JSON.parse(message) as unknown;
+    } catch {
+      return null;
+    }
+  } else if (message instanceof Uint8Array) {
+    try {
+      data = JSON.parse(new TextDecoder().decode(message)) as unknown;
+    } catch {
+      return null;
+    }
+  } else if (message !== null && typeof message === "object" && !Array.isArray(message)) {
+    data = message;
+  } else {
+    return null;
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  return data as Record<string, unknown>;
+}
+
+function extensionForScreenshotMime(mimeType: string): string | null {
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/jpeg") return "jpg";
+  return null;
+}
+
+function sanitizeCommandIdForFilename(commandId: string): string {
+  return commandId.replace(/[^a-zA-Z0-9_-]+/g, "_").slice(0, 64);
+}
+
+async function tryPersistScreenshotFromClientMessage(message: unknown): Promise<void> {
+  try {
+    const obj = parseIncomingWsJsonObject(message);
+    if (!obj) return;
+    if (obj.type !== "command.result") return;
+    const payload = obj.payload;
+    if (!payload || typeof payload !== "object") return;
+    const p = payload as Record<string, unknown>;
+    if (p.action !== "page.captureScreenshot") return;
+    if (p.ok !== true) return;
+    const result = p.result;
+    if (!result || typeof result !== "object") return;
+    const r = result as Record<string, unknown>;
+    if (typeof r.mimeType !== "string" || typeof r.base64 !== "string") return;
+    const ext = extensionForScreenshotMime(r.mimeType);
+    if (!ext) return;
+    const commandId = typeof p.commandId === "string" ? p.commandId : "unknown";
+    const safeId = sanitizeCommandIdForFilename(commandId);
+    const filename = `${Date.now()}-${safeId}.${ext}`;
+    const filepath = path.join(SCREENSHOT_OUTPUT_DIR, filename);
+    await mkdir(SCREENSHOT_OUTPUT_DIR, { recursive: true });
+    await writeFile(filepath, Buffer.from(r.base64, "base64"));
+    console.log("[meaw-mock] screenshot saved:", filepath);
+  } catch (err) {
+    console.error("[meaw-mock] failed to save screenshot:", err instanceof Error ? err.message : err);
+  }
+}
+
 function logIncomingMessage(message: unknown): void {
   if (typeof message === "string") {
     try {
       const parsed = JSON.parse(message) as unknown;
-      console.log("[meaw-mock] <-", JSON.stringify(parsed).slice(0, 500));
+      console.log("[meaw-mock] <-", JSON.stringify(parsed, null, 2).slice(0, 500));
     } catch {
       console.log("[meaw-mock] <- (non-json)", message.slice(0, 200));
     }
     return;
   }
-  console.log("[meaw-mock] <-", JSON.stringify(message).slice(0, 500));
+  console.log("[meaw-mock] <-", JSON.stringify(message, null, 2).slice(0, 500));
 }
 
 const healthResponse = t.Object({
@@ -179,6 +251,7 @@ const app = new Elysia()
     },
     message(_ws, message) {
       logIncomingMessage(message);
+      void tryPersistScreenshotFromClientMessage(message);
     },
   });
 
@@ -195,7 +268,7 @@ try {
   console.error(`[meaw-mock] Failed to bind ${SERVER_HOST}:${SERVER_PORT}: ${message}`);
   console.error(
     `[meaw-mock] Another process is already listening on port ${SERVER_PORT}. ` +
-      `Stop it first, e.g.: lsof -ti:${SERVER_PORT} | xargs -r kill`,
+    `Stop it first, e.g.: lsof -ti:${SERVER_PORT} | xargs -r kill`,
   );
   process.exit(1);
 }

@@ -1,4 +1,8 @@
 node_modules/
+
+# any file that ends with .png or .jpg in mock-server/screenshots/
+mock-server/screenshots/*.png
+mock-server/screenshots/*.jpg
 .output/
 .wxt/
 *.log

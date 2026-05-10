@@ -166,14 +166,19 @@ function sleep(ms: number): Promise<void> {
 async function handleCaptureScreenshot(command: ServerCommand, params: CaptureScreenshotParams): Promise<{ mimeType: string; base64: string }> {
   let resolvedTabId: number | undefined = params.tabId;
   if (resolvedTabId == null) {
-    const tabsList = await chrome.tabs.query({ active: true, currentWindow: true });
-    resolvedTabId = tabsList[0]?.id;
+    if (controlledTabIds.size === 0) {
+      throw new Error(
+        "page.captureScreenshot: no controlled tabs; control a tab first (e.g. tab.navigate) or pass tabId.",
+      );
+    }
+    if (controlledTabIds.size > 1) {
+      throw new Error("page.captureScreenshot: multiple controlled tabs; pass tabId to choose which to capture.");
+    }
+    resolvedTabId = [...controlledTabIds][0];
+  } else if (!controlledTabIds.has(resolvedTabId)) {
+    throw new Error(`page.captureScreenshot: tab ${resolvedTabId} is not controlled by the extension.`);
   }
   if (resolvedTabId == null) throw new Error("No tab to capture");
-  if (!controlledTabIds.has(resolvedTabId)) {
-    controlledTabIds.add(resolvedTabId);
-    await emitToServer({ tabId: resolvedTabId, controlled: true }, "tab.state");
-  }
 
   const windowId = await activateTabForCapture(resolvedTabId);
   const format = params.format === "jpeg" ? "jpeg" : "png";

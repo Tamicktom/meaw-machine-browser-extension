@@ -87,7 +87,7 @@ Supported `action` values:
 |--------|--------|--------|
 | `tab.navigate` | `{ "url": string, "tabId"?: number }` | Updates `tabId` if valid; otherwise creates a tab. Opens in the **background** (no focus steal), places the tab in a group titled `meaw-machine` (reuses an existing group in the same window when present), moves that group to the **first** slot in the tab strip, then marks the tab controlled and injects the UI strip. |
 | `tab.close` | `{ "tabId": number }` | Closes the tab. |
-| `page.captureScreenshot` | `{ "tabId"?: number, "format"?: "png" \| "jpeg", "quality"?: number }` | Activates the tab, captures **visible viewport** only. Result includes `mimeType` and base64 (no `data:` prefix). |
+| `page.captureScreenshot` | `{ "tabId"?: number, "format"?: "png" \| "jpeg", "quality"?: number }` | Only **controlled** tabs; omit `tabId` only when exactly one controlled tab exists. Focuses that tab’s window and activates the tab, then captures **visible viewport** only. Result includes `mimeType` and base64 (no `data:` prefix). |
 | `page.getContent` | `{ "tabId"?: number, "mode"?: "text" \| "html" }` | Returns trimmed text or HTML (size-capped). |
 | `session.releaseTab` | `{ "tabId": number }` | Unregisters control and removes the strip. |
 
