@@ -1,5 +1,5 @@
 //* Libraries imports
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 
 //* Local imports
 import { parseJsonEnvelope } from "./messages";

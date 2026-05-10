@@ -20,6 +20,7 @@ The production LLM/control backend lives elsewhere; this repo ships the **extens
 | Extension tooling | [WXT](https://wxt.dev/) — entrypoints under `entrypoints/` |
 | Language | TypeScript, `strict: true` ([tsconfig.json](tsconfig.json)), `chrome` types |
 | Build output | `.output/chrome-mv3` — load unpacked in Chromium for development |
+| Unit tests | [Vitest](https://vitest.dev/) with the WXT plugin (`wxt/testing/vitest-plugin`) — config at [vitest.config.ts](vitest.config.ts) |
 
 Common commands:
 
@@ -27,7 +28,8 @@ Common commands:
 - `bun run dev` — WXT watch
 - `bun run build` — production bundle
 - `bun run check` — `tsc --noEmit` (run before finishing substantive changes)
-- `bun run test` — `bun test` (protocol and command helpers)
+- `bun run test` — Vitest one-shot run (`vitest run`) for protocol and command helpers
+- `bun run test:watch` — Vitest in watch mode (`vitest`)
 - `bun run mock-server` — local Elysia server with WebSocket + `POST /command` ([mock-server/index.ts](mock-server/index.ts))
 
 ## Architecture
@@ -89,7 +91,7 @@ Follow **Mock control server** in [README.md](README.md): start `bun run mock-se
 
 ## Quality gate
 
-Run `bun run check` and `bun run test` after substantive edits. For end-to-end behavior, load the unpacked extension from `.output/chrome-mv3`.
+Run `bun run check` and `bun run test` (Vitest) after substantive edits. For end-to-end behavior, load the unpacked extension from `.output/chrome-mv3`.
 
 ## Out of scope
 
