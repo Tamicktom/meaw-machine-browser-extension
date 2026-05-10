@@ -2,6 +2,7 @@
   "name": "meaw-machine-browser-extension",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "bun@1.3.13",
   "type": "module",
   "scripts": {
     "dev": "wxt",

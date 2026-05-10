@@ -10,11 +10,11 @@ Chromium-only Manifest V3 extension that maintains a **WebSocket** connection to
 
 ## Development
 
-Requirements: Node 20+.
+Requirements: [Bun](https://bun.sh/) 1.1 or newer.
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Load the unpacked extension from `.output/chrome-mv3` (Chromium → Extensions → Load unpacked).
@@ -22,7 +22,7 @@ Load the unpacked extension from `.output/chrome-mv3` (Chromium → Extensions �
 Production build:
 
 ```bash
-npm run build
+bun run build
 ```
 
 Output: `.output/chrome-mv3`
@@ -86,7 +86,7 @@ Events (examples):
 
 | Script | Purpose |
 |--------|---------|
-| `npm run dev` | WXT dev / watch |
-| `npm run build` | Production bundle |
-| `npm run zip` | Zip for store upload (WXT) |
-| `npm run check` | TypeScript `tsc --noEmit` |
+| `bun run dev` | WXT dev / watch |
+| `bun run build` | Production bundle |
+| `bun run zip` | Zip for store upload (WXT) |
+| `bun run check` | TypeScript `tsc --noEmit` |
